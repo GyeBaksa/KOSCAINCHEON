@@ -1,0 +1,17 @@
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/app"
+  to = "/.netlify/functions/app-api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/kosca"
+  to = "/.netlify/functions/kosca"
+  status = 200
+  force = true

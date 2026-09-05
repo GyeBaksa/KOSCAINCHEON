@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#0b4da2" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>인천전문건설 업무정보</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" />
+  <link rel="stylesheet" href="styles.css?v=1.2" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">대한전문건설협회</div>
+        <h1 id="pageTitle">인명부</h1>
+      </div>
+      <button class="icon-btn" id="homeBtn" aria-label="홈">⌂</button>
+    </header>
+
+    <main id="main" class="main"></main>
+
+    <nav class="bottom-nav" aria-label="주요 메뉴">
+      <button data-route="members" class="nav-btn active"><span>👥</span><b>인명부</b></button>
+      <button data-route="workContacts" class="nav-btn"><span>☎️</span><b>업무연락처</b></button>
+      <button data-route="stats" class="nav-btn"><span>📊</span><b>현황</b></button>
+      <button data-route="docs" class="nav-btn"><span>📚</span><b>자료실</b></button>
+      <button data-route="admin" class="nav-btn"><span>⚙️</span><b>관리</b></button>
+    </nav>
+  </div>
+
+  <dialog id="detailDialog" class="sheet-dialog"></dialog>
+  <dialog id="pdfDialog" class="pdf-dialog"></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+  <script src="app.js?v=1.2" defer></script>
+</body>
+</html>

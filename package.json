@@ -1,0 +1,9 @@
+{
+  "name": "kosca-incheon-mobile-app",
+  "version": "1.2.0",
+  "private": true,
+  "description": "대한전문건설협회 인천광역시회 모바일 업무정보 앱 v1.2 - Netlify + Supabase 공용 DB",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name":"대한전문건설협회 인천광역시회 업무정보",
+  "short_name":"인천전문건설",
+  "start_url":"./index.html",
+  "display":"standalone",
+  "background_color":"#f4f7fb",
+  "theme_color":"#0b4da2",
+  "orientation":"portrait",
+  "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
