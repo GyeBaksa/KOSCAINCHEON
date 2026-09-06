@@ -177,10 +177,14 @@
     $$('[data-cat]').forEach(b=>b.onclick=()=>{state.workCategory=b.dataset.cat;renderWork();});
   }
   function workRow(x){ const phone=x.mobile||x.office; return `<div class="row-card" data-work="${esc(x.id)}"><div class="row-main"><div><span class="badge gray">${esc(x.category||'기타')}</span></div><div class="name" style="margin-top:5px">${esc(x.org||'')}</div><div class="sub">${esc(x.dept||'')} ${x.name?'· '+esc(x.name):''} ${x.work?'· '+esc(x.work):''}</div></div><div class="row-actions">${phone?`<a class="mini-btn" href="tel:${onlyDigits(phone)}" onclick="event.stopPropagation()">📞</a>`:''}<span class="chev">›</span></div></div>`; }
-  function openWork(wid){ const x=load(KEYS.work,[]).find(v=>v.id===wid); if(!x)return; const phone=x.mobile||x.office;
+  function openWork(wid){ const x=load(KEYS.work,[]).find(v=>v.id===wid); if(!x)return;
+    const officeCall=x.office?`<a class="call-btn" href="tel:${onlyDigits(x.office)}">☎ 사무실 전화</a>`:'';
+    const mobileCall=x.mobile?`<a class="call-btn" href="tel:${onlyDigits(x.mobile)}">📱 휴대전화</a>`:'';
+    const smsCall=x.mobile?`<a class="call-btn sms-btn ${x.office?'call-wide':''}" href="sms:${onlyDigits(x.mobile)}">💬 문자 보내기</a>`:'';
+    const callActions=(officeCall||mobileCall||smsCall)?`<div class="call-grid">${officeCall}${mobileCall}${smsCall}</div>`:`<div class="empty" style="margin-top:16px">등록된 전화번호가 없습니다.</div>`;
     detailDialog.innerHTML=`<div class="sheet-inner"><div class="sheet-head"><div><div class="muted">${esc(x.category||'업무연락처')}</div><h2>${esc(x.org||'')}</h2><div class="muted">${esc(x.dept||'')} ${x.name?'· '+esc(x.name):''}</div></div><button class="close-btn">✕</button></div>
       ${x.name?`<div class="detail-line"><b>담당자</b>${esc(x.name)} ${esc(x.title||'')}</div>`:''}${x.work?`<div class="detail-line"><b>담당업무</b>${esc(x.work)}</div>`:''}${x.office?`<div class="detail-line"><b>사무실 전화</b>${esc(x.office)}</div>`:''}${x.mobile?`<div class="detail-line"><b>휴대전화</b>${esc(x.mobile)}</div>`:''}${x.email?`<div class="detail-line"><b>이메일</b>${esc(x.email)}</div>`:''}${x.note?`<div class="detail-line"><b>비고</b>${esc(x.note)}</div>`:''}
-      ${phone?`<div class="call-grid"><a class="call-btn" href="tel:${onlyDigits(phone)}">📞 전화</a>${x.mobile?`<a class="call-btn sms-btn" href="sms:${onlyDigits(x.mobile)}">💬 문자</a>`:`<button class="call-btn sms-btn" disabled>문자 없음</button>`}</div>`:''}</div>`;
+      ${callActions}</div>`;
     $('.close-btn',detailDialog).onclick=()=>detailDialog.close(); detailDialog.showModal();
   }
 
