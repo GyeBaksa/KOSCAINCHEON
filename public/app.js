@@ -108,33 +108,46 @@
   function navActive(){ $$('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.route===state.route)); }
   function render(){ document.body.classList.toggle('admin-route', state.route==='admin'); navActive(); ({members:renderMembers,workContacts:renderWork,stats:renderStats,docs:renderDocs,admin:renderAdmin}[state.route]||renderMembers)(); }
 
+  function memberSearchText(m){ return `${m.name||''} ${m.company||''} ${m.title||''}`.toLowerCase(); }
+  function updateMemberGroupArea(){
+    const area=$('#memberGroupArea'); if(!area)return;
+    const groups=load(KEYS.groups,[]), members=load(KEYS.members,[]), q=state.memberQ.trim().toLowerCase();
+    if(q){
+      const filtered=members.filter(m=>memberSearchText(m).includes(q));
+      area.innerHTML=filtered.length?filtered.map(memberRow).join(''):`<div class="empty">검색 결과가 없습니다.</div>`;
+      bindMemberRows();
+    }else{
+      area.innerHTML=groups.map(g=>`<button class="list-btn" data-group="${esc(g)}"><span><strong>${esc(g)}</strong><div class="muted">${members.filter(m=>(m.groups||[]).includes(g)).length}명</div></span><span class="chev">›</span></button>`).join('')||`<div class="empty">등록된 명단이 없습니다.</div>`;
+      $$('[data-group]',area).forEach(b=>b.onclick=()=>{state.group=b.dataset.group;state.memberQ='';renderMembers();});
+    }
+  }
+  function updateMemberListArea(){
+    const area=$('#memberListArea'), count=$('#memberCount'); if(!area)return;
+    const members=load(KEYS.members,[]), q=state.memberQ.trim().toLowerCase();
+    const filtered=members.filter(m=>(m.groups||[]).includes(state.group)&&(!q||memberSearchText(m).includes(q)));
+    if(count) count.textContent=`총 ${filtered.length}명`;
+    area.innerHTML=filtered.length?filtered.map(memberRow).join(''):`<div class="empty">검색 결과가 없습니다.</div>`;
+    bindMemberRows();
+  }
   function renderMembers(){
     title.textContent = state.group || '인명부';
-    const groups=load(KEYS.groups,[]), members=load(KEYS.members,[]);
     if(!state.group){
       main.innerHTML=`
         <div class="card hero"><strong style="font-size:18px">협회 인명부</strong><div class="muted" style="margin-top:5px">명단을 선택하면 구성원을 바로 확인하고 전화할 수 있습니다.</div></div>
-        <div class="search"><input id="memberGlobalQ" placeholder="이름 또는 회사명 검색" value="${esc(state.memberQ)}"></div>
+        <div class="search"><input id="memberGlobalQ" placeholder="이름 또는 회사명 검색" value="${esc(state.memberQ)}" autocomplete="off" enterkeyhint="search"></div>
         <div id="memberGroupArea"></div>`;
-      const q=state.memberQ.trim().toLowerCase();
-      if(q){
-        const filtered=members.filter(m=>`${m.name} ${m.company} ${m.title}`.toLowerCase().includes(q));
-        $('#memberGroupArea').innerHTML = filtered.length ? filtered.map(memberRow).join('') : `<div class="empty">검색 결과가 없습니다.</div>`;
-        bindMemberRows();
-      } else {
-        $('#memberGroupArea').innerHTML = groups.map(g=>`<button class="list-btn" data-group="${esc(g)}"><span><strong>${esc(g)}</strong><div class="muted">${members.filter(m=>(m.groups||[]).includes(g)).length}명</div></span><span class="chev">›</span></button>`).join('') || `<div class="empty">등록된 명단이 없습니다.</div>`;
-        $$('[data-group]').forEach(b=>b.onclick=()=>{state.group=b.dataset.group;renderMembers();});
-      }
-      $('#memberGlobalQ').oninput=e=>{state.memberQ=e.target.value;renderMembers();};
+      updateMemberGroupArea();
+      // 입력창 자체를 다시 그리지 않고 결과 영역만 갱신한다.
+      // 모바일 한글 IME 조합 중 DOM 교체로 입력이 끊기는 현상을 방지한다.
+      $('#memberGlobalQ').addEventListener('input',e=>{state.memberQ=e.target.value;updateMemberGroupArea();});
     } else {
-      const q=state.memberQ.trim().toLowerCase();
-      const filtered=members.filter(m=>(m.groups||[]).includes(state.group) && (!q || `${m.name} ${m.company} ${m.title}`.toLowerCase().includes(q)));
       main.innerHTML=`<button class="secondary" id="backGroups" style="margin-bottom:12px">← 명단 목록</button>
-        <div class="search"><input id="memberQ" placeholder="${esc(state.group)} 검색" value="${esc(state.memberQ)}"></div>
-        <div class="muted" style="margin:0 3px 9px">총 ${filtered.length}명</div>
-        ${filtered.length?filtered.map(memberRow).join(''):`<div class="empty">등록된 사람이 없습니다.</div>`}`;
+        <div class="search"><input id="memberQ" placeholder="${esc(state.group)} 검색" value="${esc(state.memberQ)}" autocomplete="off" enterkeyhint="search"></div>
+        <div class="muted" id="memberCount" style="margin:0 3px 9px"></div>
+        <div id="memberListArea"></div>`;
       $('#backGroups').onclick=()=>{state.group=null;state.memberQ='';renderMembers();};
-      $('#memberQ').oninput=e=>{state.memberQ=e.target.value;renderMembers();}; bindMemberRows();
+      updateMemberListArea();
+      $('#memberQ').addEventListener('input',e=>{state.memberQ=e.target.value;updateMemberListArea();});
     }
   }
   function memberRow(m){ return `<div class="row-card" data-member="${esc(m.id)}"><div class="row-main"><div class="name">${esc(m.name)}</div><div class="sub">${esc(m.company||'')} ${m.title?'· '+esc(m.title):''}</div></div><div class="row-actions">${m.mobile?`<a class="mini-btn" href="tel:${onlyDigits(m.mobile)}" onclick="event.stopPropagation()">📞</a>`:''}<span class="chev">›</span></div></div>`; }
@@ -146,14 +159,22 @@
     $('.close-btn',detailDialog).onclick=()=>detailDialog.close(); detailDialog.showModal();
   }
 
+  function updateWorkResults(){
+    const area=$('#workResultArea'); if(!area)return;
+    const items=load(KEYS.work,[]), q=state.workQ.trim().toLowerCase();
+    const filtered=items.filter(x=>(state.workCategory==='전체'||x.category===state.workCategory)&&(!q||`${x.org||''} ${x.dept||''} ${x.name||''} ${x.title||''} ${x.work||''}`.toLowerCase().includes(q)));
+    area.innerHTML=filtered.length?filtered.map(workRow).join(''):`<div class="empty">검색 결과가 없습니다.</div>`;
+    $$('[data-work]',area).forEach(el=>el.onclick=()=>openWork(el.dataset.work));
+  }
   function renderWork(){
     title.textContent='업무연락처'; const items=load(KEYS.work,[]); const cats=['전체',...new Set(items.map(x=>x.category||'기타'))];
-    const q=state.workQ.trim().toLowerCase(); const filtered=items.filter(x=>(state.workCategory==='전체'||x.category===state.workCategory)&&(!q||`${x.org} ${x.dept} ${x.name} ${x.title} ${x.work}`.toLowerCase().includes(q)));
     main.innerHTML=`<div class="card hero"><strong style="font-size:18px">업무 관련 연락처</strong><div class="muted" style="margin-top:5px">기관·부서·담당업무로 검색할 수 있습니다.</div></div>
-      <div class="search"><input id="workQ" placeholder="기관·담당자·담당업무 검색" value="${esc(state.workQ)}"></div>
+      <div class="search"><input id="workQ" placeholder="기관·담당자·담당업무 검색" value="${esc(state.workQ)}" autocomplete="off" enterkeyhint="search"></div>
       <div class="chips">${cats.map(c=>`<button class="chip ${c===state.workCategory?'active':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}</div>
-      ${filtered.length?filtered.map(workRow).join(''):`<div class="empty">검색 결과가 없습니다.</div>`}`;
-    $('#workQ').oninput=e=>{state.workQ=e.target.value;renderWork();}; $$('[data-cat]').forEach(b=>b.onclick=()=>{state.workCategory=b.dataset.cat;renderWork();}); $$('[data-work]').forEach(el=>el.onclick=()=>openWork(el.dataset.work));
+      <div id="workResultArea"></div>`;
+    updateWorkResults();
+    $('#workQ').addEventListener('input',e=>{state.workQ=e.target.value;updateWorkResults();});
+    $$('[data-cat]').forEach(b=>b.onclick=()=>{state.workCategory=b.dataset.cat;renderWork();});
   }
   function workRow(x){ const phone=x.mobile||x.office; return `<div class="row-card" data-work="${esc(x.id)}"><div class="row-main"><div><span class="badge gray">${esc(x.category||'기타')}</span></div><div class="name" style="margin-top:5px">${esc(x.org||'')}</div><div class="sub">${esc(x.dept||'')} ${x.name?'· '+esc(x.name):''} ${x.work?'· '+esc(x.work):''}</div></div><div class="row-actions">${phone?`<a class="mini-btn" href="tel:${onlyDigits(phone)}" onclick="event.stopPropagation()">📞</a>`:''}<span class="chev">›</span></div></div>`; }
   function openWork(wid){ const x=load(KEYS.work,[]).find(v=>v.id===wid); if(!x)return; const phone=x.mobile||x.office;
@@ -191,9 +212,21 @@
   async function docPut(doc){ return api(`?resource=document&id=${encodeURIComponent(doc.id)}`,{method:'PATCH',body:JSON.stringify({title:doc.title,category:doc.category,baseDate:doc.baseDate,description:doc.description})},true); }
   async function docDelete(did){ return api(`?resource=document&id=${encodeURIComponent(did)}`,{method:'DELETE'},true); }
   async function renderDocs(){
-    title.textContent='자료실'; let docs=[]; try{docs=await docsAll();}catch(e){main.innerHTML=`<div class="empty">자료실을 불러오지 못했습니다.<br><span class="small">${esc(e.message)}</span></div>`;return;} const cats=['전체',...new Set(docs.map(d=>d.category||'기타'))]; const q=state.docQ.trim().toLowerCase(); const filtered=docs.filter(d=>(state.docCategory==='전체'||d.category===state.docCategory)&&(!q||`${d.title} ${d.category} ${d.description||''}`.toLowerCase().includes(q)));
-    main.innerHTML=`<div class="card hero"><strong style="font-size:18px">PDF 자료실</strong><div class="muted" style="margin-top:5px">공용 자료실의 PDF를 휴대폰에서 바로 열람합니다.</div></div><div class="search"><input id="docQ" placeholder="문서명 검색" value="${esc(state.docQ)}"></div><div class="chips">${cats.map(c=>`<button class="chip ${c===state.docCategory?'active':''}" data-doccat="${esc(c)}">${esc(c)}</button>`).join('')}</div>${filtered.length?filtered.map(d=>`<div class="row-card" data-doc="${esc(d.id)}"><div class="row-main"><div><span class="badge gray">${esc(d.category||'기타')}</span></div><div class="name" style="margin-top:5px">${esc(d.title)}</div><div class="sub">${esc(d.baseDate||'')} ${d.fileName?'· '+esc(d.fileName):''}</div></div><span class="chev">›</span></div>`).join(''):`<div class="empty">등록된 PDF가 없습니다.<br><span class="small">PC 관리자 화면에서 PDF를 업로드해 주세요.</span></div>`}`;
-    $('#docQ').oninput=e=>{state.docQ=e.target.value;renderDocs();}; $$('[data-doccat]').forEach(b=>b.onclick=()=>{state.docCategory=b.dataset.doccat;renderDocs();}); $$('[data-doc]').forEach(el=>el.onclick=()=>openDoc(el.dataset.doc));
+    title.textContent='자료실';
+    let docs=[];
+    try{docs=await docsAll();}catch(e){main.innerHTML=`<div class="empty">자료실을 불러오지 못했습니다.<br><span class="small">${esc(e.message)}</span></div>`;return;}
+    const cats=['전체',...new Set(docs.map(d=>d.category||'기타'))];
+    main.innerHTML=`<div class="card hero"><strong style="font-size:18px">PDF 자료실</strong><div class="muted" style="margin-top:5px">공용 자료실의 PDF를 휴대폰에서 바로 열람합니다.</div></div><div class="search"><input id="docQ" placeholder="문서명 검색" value="${esc(state.docQ)}" autocomplete="off" enterkeyhint="search"></div><div class="chips">${cats.map(c=>`<button class="chip ${c===state.docCategory?'active':''}" data-doccat="${esc(c)}">${esc(c)}</button>`).join('')}</div><div id="docResultArea"></div>`;
+    const update=()=>{
+      const area=$('#docResultArea'); if(!area)return;
+      const q=state.docQ.trim().toLowerCase();
+      const filtered=docs.filter(d=>(state.docCategory==='전체'||d.category===state.docCategory)&&(!q||`${d.title||''} ${d.category||''} ${d.description||''}`.toLowerCase().includes(q)));
+      area.innerHTML=filtered.length?filtered.map(d=>`<div class="row-card" data-doc="${esc(d.id)}"><div class="row-main"><div><span class="badge gray">${esc(d.category||'기타')}</span></div><div class="name" style="margin-top:5px">${esc(d.title)}</div><div class="sub">${esc(d.baseDate||'')} ${d.fileName?'· '+esc(d.fileName):''}</div></div><span class="chev">›</span></div>`).join(''):`<div class="empty">등록된 PDF가 없습니다.<br><span class="small">PC 관리자 화면에서 PDF를 업로드해 주세요.</span></div>`;
+      $$('[data-doc]',area).forEach(el=>el.onclick=()=>openDoc(el.dataset.doc));
+    };
+    update();
+    $('#docQ').addEventListener('input',e=>{state.docQ=e.target.value;update();});
+    $$('[data-doccat]').forEach(b=>b.onclick=()=>{state.docCategory=b.dataset.doccat;renderDocs();});
   }
   async function openDoc(did){
     try{
