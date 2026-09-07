@@ -176,7 +176,29 @@
     $('#workQ').addEventListener('input',e=>{state.workQ=e.target.value;updateWorkResults();});
     $$('[data-cat]').forEach(b=>b.onclick=()=>{state.workCategory=b.dataset.cat;renderWork();});
   }
-  function workRow(x){ const phone=x.mobile||x.office; return `<div class="row-card" data-work="${esc(x.id)}"><div class="row-main"><div><span class="badge gray">${esc(x.category||'기타')}</span></div><div class="name" style="margin-top:5px">${esc(x.org||'')}</div><div class="sub">${esc(x.dept||'')} ${x.name?'· '+esc(x.name):''} ${x.work?'· '+esc(x.work):''}</div></div><div class="row-actions">${phone?`<a class="mini-btn" href="tel:${onlyDigits(phone)}" onclick="event.stopPropagation()">📞</a>`:''}<span class="chev">›</span></div></div>`; }
+  function workRow(x){
+    const phoneLink=(kind, number)=>{
+      const dial=onlyDigits(number||'');
+      if(!dial || !/^\+?\d{2,15}$/.test(dial)) return '';
+      return `<a class="work-phone-link" href="tel:${dial}" aria-label="${kind} ${esc(number)} 전화 걸기">
+        <span class="work-phone-label">${kind==='사무실'?'☎ 사무실':'📱 휴대전화'}</span>
+        <strong class="work-phone-number">${esc(number)}</strong>
+      </a>`;
+    };
+    const office=phoneLink('사무실',x.office);
+    const mobile=phoneLink('휴대전화',x.mobile);
+    return `<div class="row-card work-list-card">
+      <button type="button" class="work-list-heading" data-work="${esc(x.id)}" aria-label="${esc(x.org||'업무연락처')} 상세정보 보기">
+        <span class="work-list-identity">
+          <span class="badge gray">${esc(x.category||'기타')}</span>
+          <span class="name">${esc(x.org||'')}</span>
+          <span class="sub">${esc(x.dept||'')} ${x.name?'· '+esc(x.name):''} ${x.work?'· '+esc(x.work):''}</span>
+        </span>
+        <span class="work-list-detail">상세보기 <span aria-hidden="true">›</span></span>
+      </button>
+      ${(office||mobile)?`<div class="work-list-phones ${office&&mobile?'has-two':''}">${office}${mobile}</div>`:''}
+    </div>`;
+  }
   function openWork(wid){ const x=load(KEYS.work,[]).find(v=>v.id===wid); if(!x)return;
     const officeCall=x.office?`<a class="call-btn" href="tel:${onlyDigits(x.office)}">☎ 사무실 전화</a>`:'';
     const mobileCall=x.mobile?`<a class="call-btn" href="tel:${onlyDigits(x.mobile)}">📱 휴대전화</a>`:'';
